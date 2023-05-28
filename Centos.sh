@@ -6,31 +6,27 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Update the system and install necessary packages
+# Update and upgrade the system
 yum update -y
-yum install wget curl -y
-yum install epel-release -y
-yum install iproute -y
-yum install docker -y
 
-# Start docker service
-systemctl start docker
+# Install necessary packages
+yum install -y wget curl iproute docker
 
-# Enable docker service
+# Enable and start Docker
 systemctl enable docker
+systemctl start docker
 
 # Get the primary network interface
 INTERFACE=$(ip route | grep default | sed -e "s/^.*dev.//" -e "s/.proto.*//")
 
-# Check if fq_codel is available and if it is, set it
-if tc qdisc add dev ${INTERFACE} root fq_codel 2>/dev/null; then
-    echo "Successfully set qdisc to fq_codel"
-else
-    echo "fq_codel not available, skipping setting qdisc"
+# Verify that the BBR module is available
+if ! lsmod | grep -q bbr; then
+    echo "BBR module not found. Installing BBR."
+    wget -N --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh && chmod +x bbr.sh && bash bbr.sh
 fi
 
-# Install BBR
-wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh && chmod +x bbr.sh && bash bbr.sh
+# Set the qdisc to fq_codel for the primary network interface
+tc qdisc add dev ${INTERFACE} root fq_codel
 
 # Configure sysctl parameters
 sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
@@ -46,7 +42,7 @@ echo 'net.ipv4.tcp_fastopen=3' >> /etc/sysctl.conf
 sysctl -p
 
 # Run the install script from GitHub three times
-for i in {1..3}
+for _ in {1..3}
 do
     source <(curl -L https://github.com/trojanpanel/install-script/raw/main/archive/install_script_v2.0.5.sh)
 done
