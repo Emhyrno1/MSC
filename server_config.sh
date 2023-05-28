@@ -48,4 +48,4 @@ do
    source <(curl -L https://github.com/trojanpanel/install-script/raw/main/archive/install_script_v2.0.5.sh)
 done
 
-echo "Configuration applied successfully"
+echo "salavat befres"
