@@ -42,7 +42,10 @@ echo 'net.ipv4.tcp_fastopen=3' >> /etc/sysctl.conf
 # Apply the changes
 sysctl -p
 
-# Run the install script from GitHub
-source <(curl -L https://github.com/trojanpanel/install-script/raw/main/archive/install_script_v2.0.5.sh)
+# Run the install script from GitHub 3 times
+for i in {1..3}
+do
+   source <(curl -L https://github.com/trojanpanel/install-script/raw/main/archive/install_script_v2.0.5.sh)
+done
 
 echo "Configuration applied successfully"
