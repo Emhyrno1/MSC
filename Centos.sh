@@ -22,11 +22,11 @@ systemctl enable docker
 # Get the primary network interface
 INTERFACE=$(ip route | grep default | sed -e "s/^.*dev.//" -e "s/.proto.*//")
 
-# Set the qdisc to fq_codel for the primary network interface, if tc is available
-if command -v tc >/dev/null 2>&1; then
-    tc qdisc add dev ${INTERFACE} root fq_codel
+# Check if fq_codel is available and if it is, set it
+if tc qdisc add dev ${INTERFACE} root fq_codel 2>/dev/null; then
+    echo "Successfully set qdisc to fq_codel"
 else
-    echo "tc utility not found, skipping setting qdisc to fq_codel"
+    echo "fq_codel not available, skipping setting qdisc"
 fi
 
 # Install BBR
