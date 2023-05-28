@@ -9,8 +9,16 @@ fi
 # Update and upgrade the system
 apt-get update && apt-get upgrade -y
 
+# Install wget and curl
+apt-get install wget curl -y
+
 # Get the primary network interface
 INTERFACE=$(ip route | grep default | sed -e "s/^.*dev.//" -e "s/.proto.*//")
+
+# Download and run the BBR installation script
+wget -N --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh
+chmod +x bbr.sh
+bash bbr.sh
 
 # Verify that the BBR module is available
 if ! lsmod | grep -q bbr; then
