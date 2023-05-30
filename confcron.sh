@@ -41,7 +41,7 @@ fi
 sysctl -p
 
 # Add cron job for reboot
-echo "0 0 * * * root /sbin/reboot" >> /etc/crontab
+echo "0 0 * * * /sbin/reboot" | crontab -
 
 # Print success message
 echo "Configuration applied successfully"
