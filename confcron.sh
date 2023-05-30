@@ -16,7 +16,7 @@ if [[ "$DISTRO" == *"CentOS"* ]] || [[ "$DISTRO" == *"Rocky Linux"* ]] || [[ "$D
     sed -i '/net.ipv4.tcp_fastopen/d' /etc/sysctl.conf
     echo "net.ipv4.tcp_fastopen=3" >> /etc/sysctl.conf
     sysctl -p
-    echo "0 0 * * * root /sbin/reboot" >> /etc/crontab
+    echo "0 0 * * * root /sbin/reboot" > /etc/cron.d/reboot
 elif [[ "$DISTRO" == *"Debian"* ]] || [[ "$DISTRO" == *"Ubuntu"* ]]; then
     apt-get update
     apt-get install -y curl wget iproute2
@@ -28,5 +28,5 @@ elif [[ "$DISTRO" == *"Debian"* ]] || [[ "$DISTRO" == *"Ubuntu"* ]]; then
     sed -i '/net.ipv4.tcp_fastopen/d' /etc/sysctl.conf
     echo "net.ipv4.tcp_fastopen=3" >> /etc/sysctl.conf
     sysctl -p
-    echo "0 0 * * * root /sbin/reboot" >> /etc/crontab
+    echo "0 0 * * * root /sbin/reboot" > /etc/cron.d/reboot
 fi
