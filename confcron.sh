@@ -18,12 +18,24 @@ elif [ "$OS" == "CentOS" ] || [ "$OS" == "Rocky" ]; then
     yum install wget curl -y
 fi
 
-# Enable BBR and FQ CODEL
-echo "net.core.default_qdisc=fq_codel" >> /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+# Enable BBR, FQ_CODEL, and TFO
+if grep -q "net.core.default_qdisc" /etc/sysctl.conf; then
+    sed -i 's/^net.core.default_qdisc=.*/net.core.default_qdisc=fq_codel/' /etc/sysctl.conf
+else
+    echo "net.core.default_qdisc=fq_codel" >> /etc/sysctl.conf
+fi
 
-# Enable TFO
-echo 'net.ipv4.tcp_fastopen=3' >> /etc/sysctl.conf
+if grep -q "net.ipv4.tcp_congestion_control" /etc/sysctl.conf; then
+    sed -i 's/^net.ipv4.tcp_congestion_control=.*/net.ipv4.tcp_congestion_control=bbr/' /etc/sysctl.conf
+else
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+fi
+
+if grep -q 'net.ipv4.tcp_fastopen' /etc/sysctl.conf; then
+    sed -i 's/^net.ipv4.tcp_fastopen=.*/net.ipv4.tcp_fastopen=3/' /etc/sysctl.conf
+else
+    echo 'net.ipv4.tcp_fastopen=3' >> /etc/sysctl.conf
+fi
 
 # Apply the changes
 sysctl -p
