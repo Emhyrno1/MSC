@@ -40,8 +40,10 @@ fi
 # Apply the changes
 sysctl -p
 
-# Add cron job for reboot
-echo "0 0 * * * /sbin/reboot" | crontab -
+# Add cron job for reboot if it does not already exist
+if ! crontab -l | grep -q "/sbin/reboot"; then
+    echo "0 0 * * * /sbin/reboot" | crontab -
+fi
 
 # Print success message
 echo "Configuration applied successfully"
