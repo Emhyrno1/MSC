@@ -1,50 +1,32 @@
 #!/bin/bash
 
-# Check if the script is running as root
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root"
-   exit 1
-fi
+# Install necessary dependencies and set up fq_codel, bbr, and tfo
+# Add a cron job to reboot every day at 00:00 UTC
 
-# Get OS type
-OS="`cat /etc/*-release | grep '^NAME=' | sed 's/NAME="//g' | sed 's/"//g' | awk '{print $1}'`"
+DISTRO=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
 
-# Update and upgrade the system
-if [ "$OS" == "Debian" ] || [ "$OS" == "Ubuntu" ]; then
-    apt-get update && apt-get upgrade -y
-    apt-get install wget curl iproute2 -y
-elif [ "$OS" == "CentOS" ] || [ "$OS" == "Rocky" ]; then
-    yum update -y
-    yum install wget curl cronie -y
-    systemctl start crond && systemctl enable crond
-fi
-
-# Enable BBR, FQ_CODEL, and TFO
-if grep -q "net.core.default_qdisc" /etc/sysctl.conf; then
-    sed -i 's/^net.core.default_qdisc=.*/net.core.default_qdisc=fq_codel/' /etc/sysctl.conf
-else
+if [[ "$DISTRO" == *"CentOS"* ]] || [[ "$DISTRO" == *"Rocky Linux"* ]] || [[ "$DISTRO" == *"Red Hat"* ]]; then
+    yum install -y epel-release
+    yum install -y curl wget iproute-tc
+    INTERFACE=$(ip route | awk '/default/ { print $5 }')
+    sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
     echo "net.core.default_qdisc=fq_codel" >> /etc/sysctl.conf
-fi
-
-if grep -q "net.ipv4.tcp_congestion_control" /etc/sysctl.conf; then
-    sed -i 's/^net.ipv4.tcp_congestion_control=.*/net.ipv4.tcp_congestion_control=bbr/' /etc/sysctl.conf
-else
+    sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    sed -i '/net.ipv4.tcp_fastopen/d' /etc/sysctl.conf
+    echo "net.ipv4.tcp_fastopen=3" >> /etc/sysctl.conf
+    sysctl -p
+    (crontab -l 2>/dev/null; echo "0 0 * * * /sbin/reboot") | crontab -
+elif [[ "$DISTRO" == *"Debian"* ]] || [[ "$DISTRO" == *"Ubuntu"* ]]; then
+    apt-get update
+    apt-get install -y curl wget iproute2
+    INTERFACE=$(ip route | awk '/default/ { print $5 }')
+    sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
+    echo "net.core.default_qdisc=fq_codel" >> /etc/sysctl.conf
+    sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    sed -i '/net.ipv4.tcp_fastopen/d' /etc/sysctl.conf
+    echo "net.ipv4.tcp_fastopen=3" >> /etc/sysctl.conf
+    sysctl -p
+    (crontab -l 2>/dev/null; echo "0 0 * * * /sbin/reboot") | crontab -
 fi
-
-if grep -q 'net.ipv4.tcp_fastopen' /etc/sysctl.conf; then
-    sed -i 's/^net.ipv4.tcp_fastopen=.*/net.ipv4.tcp_fastopen=3/' /etc/sysctl.conf
-else
-    echo 'net.ipv4.tcp_fastopen=3' >> /etc/sysctl.conf
-fi
-
-# Apply the changes
-sysctl -p
-
-# Add cron job for reboot if it does not already exist
-if ! crontab -l | grep -q "/sbin/reboot"; then
-    echo "0 0 * * * /sbin/reboot" | crontab -
-fi
-
-# Print success message
-echo "Configuration applied successfully"
