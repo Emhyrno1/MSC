@@ -15,7 +15,8 @@ if [ "$OS" == "Debian" ] || [ "$OS" == "Ubuntu" ]; then
     apt-get install wget curl iproute2 -y
 elif [ "$OS" == "CentOS" ] || [ "$OS" == "Rocky" ]; then
     yum update -y
-    yum install wget curl -y
+    yum install wget curl cronie -y
+    systemctl start crond && systemctl enable crond
 fi
 
 # Enable BBR, FQ_CODEL, and TFO
